@@ -1,0 +1,5 @@
+
+
+#define APPL_NAME "Z80 EMUF"
+#define LOGFILE 1
+#define DEFAULT_CLOCK_MHZ 4

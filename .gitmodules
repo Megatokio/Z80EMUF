@@ -1,0 +1,6 @@
+[submodule "Libraries"]
+	path = Libraries
+	url = git@bitbucket.org:megatokio/libraries.git
+[submodule "Z80"]
+	path = Z80
+	url = git@bitbucket.org:megatokio/z80.git
