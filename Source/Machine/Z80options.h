@@ -39,6 +39,7 @@
 
 #include "settings.h"
 #include "kio/kio.h"
+#define Z80_have_class_FD
 
 
 // we don't use the emulated system's actual page size of 32 kB for the Z80's page size
