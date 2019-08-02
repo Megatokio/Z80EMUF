@@ -65,11 +65,11 @@ HEADERS  +=					\
 	Source/Qt/VectorDisplay.h		\
 	Source/Qt/VectorDisplayFont.h	\
 	Source/Machine/Z80/Z80.h		\
+	Source/Machine/Z80/Z80core.h	\
 	Source/Machine/Z80/Z80macros.h	\
 	Source/Machine/Z80/Z80opcodes.h	\
-	Source/Machine/Z80options.h		\
-	Source/Machine/Z80/Z80opcodes.h	\
 	Source/Machine/Z80/Z80core.h	\
+	Source/Machine/Z80options.h		\
 	Source/Machine/Item.h			\
 	Source/Machine/IsaObject.h		\
 	Source/Machine/Machine.h		\
