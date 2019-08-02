@@ -37,10 +37,10 @@ SOURCES +=					\
 	Source/Machine/Mmu.cpp			\
 
 HEADERS  +=					\
-	config.h				\
+	config.h						\
 	Libraries/kio/kio.h				\
 	Libraries/kio/exceptions.h		\
-	Libraries/kio/error_emacs.h		\
+	Libraries/kio/errors.h			\
 	Libraries/kio/standard_types.h	\
 	Libraries/kio/peekpoke.h		\
 	Libraries/cstrings/cstrings.h	\

@@ -31,7 +31,7 @@
 #include "Sio.h"
 #include "unix/pthreads.h"
 #include "Mmu.h"
-
+#include <unistd.h>
 
 /*	run the Z80 on another thread:
 */
