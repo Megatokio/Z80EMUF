@@ -37,7 +37,6 @@ SOURCES +=					\
 	Source/Machine/Mmu.cpp			\
 
 HEADERS  +=					\
-	config.h				\
 	Libraries/kio/kio.h				\
 	Libraries/kio/exceptions.h		\
 	Libraries/kio/errors.h			\
