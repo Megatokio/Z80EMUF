@@ -60,7 +60,7 @@ class VectorDisplay : public QWidget
 	QTimer	t;
 
 // HW scaling (transformation)
-	float	a,b,c,d;
+	qreal	a,b,c,d;
 
 // Engine 1:
 // read drawing commands from video ram
@@ -72,8 +72,9 @@ class VectorDisplay : public QWidget
 	class Engine1
 	{
 	public:
-		Engine1(VectorDisplay* d)	: display(d), now(0), vram_mask(0), vram(NULL), vram_self_allocated(false),
-					  A(0), X(0),Y(0), R(0),I(0),C(0),E(0) {}
+		Engine1(VectorDisplay* d) :
+			display(d), now(0), vram_mask(0), vram(nullptr), vram_self_allocated(false),
+			A(0), X(0),Y(0), R(0),I(0),C(0),E(0) {}
 
 		~Engine1() { if(vram_self_allocated) delete[] vram; }
 
@@ -96,8 +97,8 @@ class VectorDisplay : public QWidget
 		bool	C;			//	reset:0			cathode ray beam enable
 		bool	E;			//	reset:0			clock enable
 
-		uint8*	setVideoRam(uint size=16 kB, uint8* ram=NULL);
-		uint8*	getVideoRam()						{ return (uint8*)vram; }
+		uint8*	setVideoRam(uint size=16 kB, uint8* ram=nullptr);
+		uint8*	getVideoRam()						{ return vram; }
 
 		void	reset(uint32 cc=0);						// disable drawing until setAddress() is called
 		void	setAddress(uint32 cc=0, uint addr=0);	// and start drawing (set register 'E' to 1)
@@ -111,7 +112,7 @@ class VectorDisplay : public QWidget
 
 public:
 	explicit VectorDisplay(QWidget* parent);
-			~VectorDisplay();
+			~VectorDisplay() override;
 
 	void	setTransformation	(qreal a, qreal b, qreal c, qreal d);	// HW scaling & transformation
 	void	setScale			(qreal f=1.0);							// undistorted, normally f ≤ 1.0
@@ -121,11 +122,11 @@ public:
 
 	void	lineto(const QPointF&);
 	void	lineto(qreal x, qreal y);
-	void	draw(int dx, int dy)		{ lineto(DACs.x()+dx,DACs.y()+dy); }
+	void	draw(qreal dx, qreal dy)	{ lineto(DACs.x()+dx,DACs.y()+dy); }
 
 	void	moveto(const QPointF&);
 	void	moveto(qreal x, qreal y);
-	void	move(int dx, int dy)		{ moveto(DACs.x()+dx,DACs.y()+dy); }
+	void	move(qreal dx, qreal dy)	{ moveto(DACs.x()+dx,DACs.y()+dy); }
 
 	uint	print(uchar c, uint mask=0, qreal scale_x=1, qreal scale_y=1);	// append single char
 	uint	print(cstr,    uint mask=0, qreal scale_x=1, qreal scale_y=1);	// append text
