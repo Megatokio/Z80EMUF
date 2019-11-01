@@ -49,7 +49,7 @@ private:
 	void		_reset(int32);
 
 public:
-	Sio(Item *, uint32 cc_per_byte=9600, uint addr=0x00ff, uint mask=0x00ff, uint c_mask=0x0100);
+	Sio(Item *, int32 cc_per_byte=9600, uint addr=0x00ff, uint mask=0x00ff, uint c_mask=0x0100);
 	~Sio();
 
 	uint		obu_avail()			{ return obuwp-oburp; }

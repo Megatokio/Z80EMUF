@@ -58,6 +58,7 @@ public slots:
 	void	slotReset();
 	void	slotNmi();
 	void	slotSpeed(QAction*);
+	void	slotQuitAppl();
 };
 
 #endif

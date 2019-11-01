@@ -29,7 +29,7 @@
 #include "Z80/Z80opcodes.h"
 
 
-Sio::Sio(Item* m, uint32 cc_per_byte, uint addr, uint mask, uint creg_mask)
+Sio::Sio(Item* m, int32 cc_per_byte, uint addr, uint mask, uint creg_mask)
 :
 	Item(m, isa_Sio, addr,mask, addr,mask),
 	ccpb(cc_per_byte),
@@ -75,12 +75,12 @@ void Sio::reset(int32 cc)
 void Sio::update_interrupt(int32 cc)
 {
 	// avoid race condition => read ibu_avail() and obu_free() only once:
-	bool i_avail;
-	bool o_free;
+	bool i_avail = ibu_avail();
+	bool o_free  = obu_free();
 
 	cc_next_update = NEVER;
-	irpt = ((i_avail=ibu_avail()) && cc>=cc_ibu_next && ibu_interrupt_enabled) ||
-			((o_free=obu_free())  && cc>=cc_obu_next && obu_interrupt_enabled);
+	irpt = (i_avail && cc>=cc_ibu_next && ibu_interrupt_enabled) ||
+		   (o_free  && cc>=cc_obu_next && obu_interrupt_enabled);
 	if(irpt) return;
 
 	bool i = ibu_interrupt_enabled && i_avail;

@@ -34,8 +34,8 @@
 
 // the implemented example Mmu supports 128 kB of memory organized in 4 pages á 32 kB.
 // the first page is used as the system's rom. (that is: never paged in for writing.)
-#define pagesize	0x8000
-#define	numpages	4
+#define pagesize	0x8000u
+#define	numpages	4u
 
 
 class Machine : public Item
@@ -57,22 +57,26 @@ public:
 	CoreByte memory[numpages*pagesize];
 
 	pthread_t z80_thread;
+	bool	terminate;
 
 
-	Machine(uint32 ccps, uint fps, cstr romfilepath);
+	Machine (int32 ccps, int fps, cstr romfilepath);
 	~Machine();
 
-	void	run();
-	void	nmi();
-	void	setSpeed(uint32 ccps);
+	void run();
+	void nmi();
+	void setSpeed (int32 ccps);
+	void reset();
+	void poweron()		{ init(); }
 
-	void	lock()			{ _lock.lock(); }
-	void	unlock()		{ _lock.unlock(); }
-	bool	is_locked()		{ return _lock.trylock()==0; }		// only for error checking
+	void lock()			{ _lock.lock(); }
+	void unlock()		{ _lock.unlock(); }
+	bool is_locked()	{ return _lock.trylock()==0; }		// only for error checking
 
 // Item interface:
+protected:
 virtual void	init		(/*cc=0*/);
-virtual void	reset		(int32);
+//virtual void	reset		(int32);
 //virtual bool	input		(int32, uint, uint8&)		{return no;}
 //virtual bool	output		(int32, uint, uint8)		{return no;}
 //virtual void	update		(int32);

@@ -46,8 +46,8 @@ public:
 	explicit Display404(QWidget* parent);
 			~Display404();
 
-	void	print(cstr s);
-	void	print(char);
+	void	print(cstr);
+	void	print(uchar);
 
 protected:
 	void	paintEvent		(QPaintEvent*);		// virtual protected

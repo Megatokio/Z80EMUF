@@ -26,7 +26,7 @@
 
 
 #include "MainWindow.h"
-#include "QTimer"
+#include <QTimer>
 #include <QSettings>
 #include <QKeyEvent>
 #include <QMenu>
@@ -37,13 +37,13 @@
 #include "Machine.h"
 #include "Sio.h"
 #include "Z80/Z80.h"
+#include <QCoreApplication>
 
+static int32 ccps	= 1000020 * DEFAULT_CLOCK_MHZ;	// cc per second
+static int   fps 	= 100;							// frames per second
+static int32 ccpf	= ccps/fps;						// cc per frame
 
-uint32	ccps	= 1000020 * DEFAULT_CLOCK_MHZ;
-uint	fps		= 100;
-uint32	ccpf	= ccps/fps;
-
-uint speed[] = {1,2,4,8,12,16,24,40,80,120,160,200,240};
+static int  speed[] = {1,2,4,8,12,16,24,40,80,120,160,200,240,300};
 
 
 MainWindow::MainWindow(QWidget* parent, cstr romfilepath)
@@ -53,17 +53,12 @@ MainWindow::MainWindow(QWidget* parent, cstr romfilepath)
 	display(new Display404(this)),
 	machine(new Machine(ccps,fps,romfilepath))
 {
-	resize(QSize(42*6*2,5*10*2));
-	move(QPoint(64,64));
-
-	setCentralWidget(display);
-	setFixedSize(display->size());
-
 	QMenu* mControl = new QMenu("Control",this);
-	mControl->addAction("Power On", this, SLOT(slotPowerOn()),Qt::CTRL|Qt::Key_R|Qt::SHIFT);
-	mControl->addAction("Reset",	this, SLOT(slotReset()),  Qt::CTRL|Qt::Key_R);
-	mControl->addAction("Nmi",		this, SLOT(slotNmi()),    Qt::CTRL|Qt::Key_N);
-
+	mControl->addAction("Power On", this, &MainWindow::slotPowerOn,Qt::CTRL|Qt::Key_R|Qt::SHIFT);
+	mControl->addAction("Reset",	this, &MainWindow::slotReset,  Qt::CTRL|Qt::Key_R);
+	mControl->addAction("Nmi",		this, &MainWindow::slotNmi,    Qt::CTRL|Qt::Key_N);
+	mControl->addSeparator();
+	mControl->addAction("Quit",		this, &MainWindow::slotQuitAppl, Qt::CTRL|Qt::Key_Q);
 
 	QMenu* mSpeed = new QMenu("Speed",this);
 
@@ -80,9 +75,14 @@ MainWindow::MainWindow(QWidget* parent, cstr romfilepath)
 	connect(speedActionGroup,SIGNAL(triggered(QAction*)),this,SLOT(slotSpeed(QAction*)));
 
 	QMenuBar* mbar = new QMenuBar(this);
+	mbar->setNativeMenuBar(true);
 	mbar->addMenu(mControl);
 	mbar->addMenu(mSpeed);
 	setMenuBar(mbar);
+
+	move(QPoint(200,200));
+	setCentralWidget(display);
+	setFixedSize(minimumSizeHint());
 
 	connect(timer,SIGNAL(timeout()),this,SLOT(update()));
 	timer->start(1000/25);
@@ -115,7 +115,7 @@ void MainWindow::keyPressEvent(QKeyEvent* e)
 	if(e->text().count()==0) return;
 	Sio* sio = machine->sio_A;
 	if(sio->ibu_free())
-		sio->store_byte(e->text().at(0).toLatin1());
+		sio->store_byte(uchar(e->text().at(0).toLatin1()));
 	else
 		logline("sio A: input overflow");
 }
@@ -134,23 +134,27 @@ void MainWindow::slotNmi()
 
 void MainWindow::slotReset()
 {
-	machine->reset(machine->cpu->cc);
+	machine->reset();
 }
 
 
 void MainWindow::slotPowerOn()
 {
-	machine->init();
+	machine->poweron();
 }
 
 
-void MainWindow::slotSpeed(QAction* a)
+void MainWindow::slotSpeed (QAction* a)
 {
 	int speed = a->data().toInt();
 	machine->setSpeed(speed*1000000);
 }
 
 
+void MainWindow::slotQuitAppl()
+{
+	QCoreApplication::quit();
+}
 
 
 
