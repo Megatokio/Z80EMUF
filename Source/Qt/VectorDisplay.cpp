@@ -106,7 +106,7 @@ static void setup_once()
 #endif
 
 
-#define PHOSPHOR BLUE
+#define PHOSPHOR AMBER
 
 #if PHOSPHOR==PAPERWHITE
 #define red		0xFF
@@ -178,7 +178,7 @@ QGLFormat myQGLformat()
 {
 	QGLFormat fmt;
 	fmt.setSwapInterval(1);		// -> QTimer.setInterval(0) --> sync to FFB
-	fmt.setDoubleBuffer(false);
+	//fmt.setDoubleBuffer(true);// true=default. required for swap interval (sync. with ffb)
 	return fmt;
 }
 #endif

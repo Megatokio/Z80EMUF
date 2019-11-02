@@ -24,10 +24,10 @@
 #include <QGLWidget>
 
 
-#define USE_OGL		0
-#define TRANSPARENT 1		// transparent window:  only QWidget
-#define LUMINESCENT 0		// lumnescenct drawing: only QGLWidget
-#define FRAMELESS   1		// only QWidget. QGLWidget: TODO ?
+#define USE_OGL		1
+#define TRANSPARENT 0		// transparent window:  only QWidget
+#define LUMINESCENT 1		// lumnescenct drawing: only QGLWidget
+#define FRAMELESS   0		// only QWidget. QGLWidget: TODO ?
 
 #define GREEN		1
 #define WHITE		2
