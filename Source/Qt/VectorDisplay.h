@@ -22,19 +22,25 @@
 #include <QPointF>
 #include <QTimer>
 #include <QGLWidget>
+#include "Templates/Array.h"
+#include "unix/pthreads.h"
 
+#ifndef USE_OGL			// settings.h
+#define USE_OGL 1
+#endif
 
-#define USE_OGL		1
-#define TRANSPARENT 0		// transparent window:  only QWidget
-#define LUMINESCENT 1		// lumnescenct drawing: only QGLWidget
-#define FRAMELESS   0		// only QWidget. QGLWidget: TODO ?
-
-#define GREEN		1
-#define WHITE		2
-#define	AMBER		3
-#define	BLUE		4
-#define PAPERWHITE	5
-
+enum DisplayStyle : uint
+{
+	OPAQUE=0,
+	FRAMELESS=1,		// only QWidget. QGLWidget: TODO ?
+	TRANSPARENT=2,		// only QWidget
+	FADING=4,			// only QGLWidget
+	DEFAULT = USE_OGL ? FADING : OPAQUE
+};
+inline DisplayStyle operator| (DisplayStyle a, uint b) { return DisplayStyle(uint(a) | b); }
+inline DisplayStyle operator& (DisplayStyle a, uint b) { return DisplayStyle(uint(a) & b); }
+inline void operator&= (DisplayStyle& a, uint b) { reinterpret_cast<uint&>(a) &= b; }
+inline void operator|= (DisplayStyle& a, uint b) { reinterpret_cast<uint&>(a) |= b; }
 
 
 #if USE_OGL
@@ -42,113 +48,228 @@ class VectorDisplay : public QGLWidget
 #else
 class VectorDisplay : public QWidget
 #endif
-
 {
 	Q_OBJECT
 
-// drawing commands
-// Polylines are drawn. Last point of each Polyline is x = -0x8000.
-	QPointF	wbu[8000];	// write buffer (unter construction)
-	QPointF	rbu[8000];	// read buffer  (displayed)
-	uint	wbucount;
-	uint	rbucount;
-	bool	move_pending;
-	QPointF	DACs;
-
-
-// Selftest animation timer:
-	QTimer	t;
-
-// HW scaling (transformation)
-	qreal	a,b,c,d;
-
-// Engine 1:
-// read drawing commands from video ram
-// can be used as a co-routine
-// drawing commands are as believed to be most useful for real hardware:
-//	dx and dy contain absolute value plus direction bit
-//	decoded command to directly load X and Y into DAC registers
-//	and to disable beam for one command and to stop drawing and raise an interrupt
-	class Engine1
+	enum DrawingCmd
 	{
-	public:
-		Engine1(VectorDisplay* d) :
-			display(d), now(0), vram_mask(0), vram(nullptr), vram_self_allocated(false),
-			A(0), X(0),Y(0), R(0),I(0),C(0),E(0) {}
+		PushTransformation,
+		PopTransformation,
+		SetTransformation,
+		SetScale,
+		SetScaleAndRotation,
+		ResetTransformation,
 
-		~Engine1() { if(vram_self_allocated) delete[] vram; }
+		SelectPen,		// inline: idx
+		SelectBrush,	// inline: idx
 
-	// back pointer:
-		VectorDisplay*	display;
+		MoveTo,			// point
+		DrawTo,			// point
 
-	// virtual time:
-		uint32	now;
+		Move,			// dist
+		Draw,			// dist
+		DrawHor,		// dx
+		DrawVer, 		// dy
+		DrawText,		// inline: f_centered, char, ... '\0'
+		SetTextSize,	// inline: scale_x, scale_y
 
-	// shared video ram
-		uint	vram_mask;
-		uint8*	vram;
-		bool	vram_self_allocated;
+		DrawLine,		// 2 points
+		DrawPolyline,	// inline: count, args: count points
+		DrawLines,		// inline: count, args: count * 2 points
 
-	// registers:
-		uint	A;			//	host-writable	address register (program counter)
-		qreal 	X, Y;		//					beam position (DAC input values)
-		bool	R;			//	reset:0			addressing mode (0=absolute / 1=relative)
-		bool	I;			//	reset:0			interrupt active
-		bool	C;			//	reset:0			cathode ray beam enable
-		bool	E;			//	reset:0			clock enable
-
-		uint8*	setVideoRam(uint size=16 kB, uint8* ram=nullptr);
-		uint8*	getVideoRam()						{ return vram; }
-
-		void	reset(uint32 cc=0);						// disable drawing until setAddress() is called
-		void	setAddress(uint32 cc=0, uint addr=0);	// and start drawing (set register 'E' to 1)
-		bool	run(uint32 cc);							// run co-routine. return value of register 'E'
-		void	ffb(uint32 cc);
-		void	test();
+		// closed:
+		DrawRectangle,	// p1, p2
+		DrawTriangle,	// p1, p2, p3
+		DrawPolygon,	// inline: count, args: count points
+		DrawConvexPolygon, // inline: count, args: count points
+		DrawEllipse,	// p1, rx, ry
 	};
 
-	Engine1 e1;
+	struct Display
+	{	QSize  size;				// nominal scene size
+		QColor background_color;  	// background color w/o alpha
+		QColor blur_color;			// background color used for clearing / fading before drawing
+		QPen   default_pen;			// default pen color
+		QBrush default_brush;
+		DisplayStyle style{OPAQUE};
+		bool   synchronizes_with_vblank{no};
+	} display;
 
+	// HW scaling (transformation)
+	qreal a=1,b=0,c=0,d=1;
+
+	// defined values:
+	Array<QPen> pens{0u,8u};
+	Array<QBrush> brushes{0u,8u};
+
+	// Drawing Pipeline:
+	PLock pipeline_lock;
+
+	// completed frame ready for display:
+	Array<qreal> new_drawing_data;
+	Array<uint8> new_drawing_commands;
+
+	// current frame under construction:
+	Array<qreal> drawing_data{0u,100000u};
+	Array<uint8> drawing_commands{0u,1000u};
+
+	// displayed frame returned from paint():
+	Array<qreal> old_drawing_data{0u,100000u};
+	Array<uint8> old_drawing_commands{0u,1000u};
 
 public:
-	explicit VectorDisplay(QWidget* parent);
-			~VectorDisplay() override;
+	struct ColorSet
+	{
+		QColor background;		// incl. alpha for fading = 0x40 .. 0x80; opaque = 0xff
+		QColor lines;			// incl. alpha, dflt = 0x80
+	};
 
-	void	setTransformation	(qreal a, qreal b, qreal c, qreal d);	// HW scaling & transformation
-	void	setScale			(qreal f=1.0);							// undistorted, normally f ≤ 1.0
-	void	setScaleAndRotation	(qreal f=1.0, qreal rad=0.0);			// ccw
+	// predefined color sets:
+	static const ColorSet AMBER, GREEN, BLUE, WHITE, PAPERWHITE;
 
-	void	swap_buffers();
+	// ctor, dtor:
+	explicit VectorDisplay (QWidget* parent, QSize widgetSize = {1000,750}, const ColorSet& = GREEN, DisplayStyle = DEFAULT);
+	~VectorDisplay() override;
 
-	void	lineto(const QPointF&);
-	void	lineto(qreal x, qreal y);
-	void	draw(qreal dx, qreal dy)	{ lineto(DACs.x()+dx,DACs.y()+dy); }
+	// Display settings:
+	void setDisplaySize (QSize size) noexcept	{ display.size = size; }	// logical size
+	QSize displaySize() const noexcept			{ return display.size; }	// logical size
+	void setDisplayColors (const ColorSet&) noexcept;
+	void setBackgroundColor (QColor) noexcept;								// incl. alpha for luminescent fading
+	void setBackgroundColor (int r, int g, int b, int a=0xff) noexcept;		// incl. alpha for luminescent fading
+	uint setDisplayStyle (DisplayStyle) noexcept;
+	bool setFrameless (bool=yes) noexcept;		// only QWidget
+	bool setTransparent (bool=yes) noexcept;	// only QWidget
+	bool setFading (bool=yes) noexcept;			// only QGLWidget
+	bool synchronizesWithVblank() const noexcept{ return display.synchronizes_with_vblank; } // => drawFrame() is blocking
 
-	void	moveto(const QPointF&);
-	void	moveto(qreal x, qreal y);
-	void	move(qreal dx, qreal dy)	{ moveto(DACs.x()+dx,DACs.y()+dy); }
+	// Define Pens (lines) and Brushes (fills):
+	void definePen (uint idx, QPen) noexcept;
+	void defineBrush (uint idx, QBrush) noexcept;
+	void definePen (uint idx, QColor, qreal width=1.0) noexcept;
+	void defineBrush(uint idx, QColor color) noexcept { defineBrush(idx, QBrush(color)); }
 
-	uint	print(uchar c, uint mask=0, qreal scale_x=1, qreal scale_y=1);	// append single char
-	uint	print(cstr,    uint mask=0, qreal scale_x=1, qreal scale_y=1);	// append text
+	// Drawing Commands:
 
+	void setTransformation	(qreal a, qreal b, qreal c, qreal d) noexcept;	// display scaling & transformation
+	void setScale			(qreal f=1.0) noexcept;							// undistorted, not rotated, normally f ≤ 1.0
+	void setScaleAndRotation (qreal f=1.0, qreal rad=0.0) noexcept;			// cw
+	void resetTransformation() noexcept;
+
+	void selectPen (uint idx) noexcept;
+	void setTextSize (qreal size=8.0, qreal width=1.0) noexcept;
+
+	// drawing using the 'current position':
+	void moveTo (qreal x, qreal y) noexcept;
+	void drawTo (qreal x, qreal y) noexcept;
+	void moveTo (QPointF) noexcept;
+	void drawTo (QPointF) noexcept;
+	void move (qreal dx, qreal dy) noexcept;
+	void draw (qreal dx, qreal dy) noexcept;
+	void drawHor (qreal dx) noexcept;
+	void drawVer (qreal dy) noexcept;
+	void print (char c) noexcept;
+	void print (cstr s, bool centered=no) noexcept;
+
+	// drawing at arbitrary positions:
+	void drawLine (QLineF) noexcept;
+	void drawLine (QPointF, QPointF) noexcept;
+	void drawLine (qreal x1, qreal y1, qreal x2, qreal y2) noexcept;
+	void drawLines (const QLineF* lines, uint count) noexcept;		// draw bunch of lines
+	void drawPolyline (const QPointF* points, uint count) noexcept;	// draw count-1 connected lines
+
+	// draw closed + filled shapes:
+	void drawRectangle (const QRectF&) noexcept;
+	void drawRectangle (const QPointF&, const QPointF&) noexcept;
+	void drawRectangle (const QPointF&, const QSizeF&) noexcept;
+	void drawRectangle (qreal x1, qreal y1, qreal x2, qreal y2) noexcept;
+	void drawTriangle (const QPointF&, const QPointF&, const QPointF&) noexcept;
+	void drawPolygon (const QPointF* points, uint count) noexcept;
+	void drawPolygon (const Array<QPointF>& points) noexcept;
+	void drawConvexPolygon (const QPointF* points, uint count) noexcept;
+	void drawConvexPolygon (const Array<QPointF>& points) noexcept;
+	void drawEllipse (const QPointF& center, qreal rx, qreal ry) noexcept;
+	void drawCircle (const QPointF& center, qreal r) noexcept { drawEllipse(center,r,r); }
+
+	void vsync() noexcept;		// doit!
 
 protected:
-//	void	showEvent		(QShowEvent *) override;
-	void	paintEvent		(QPaintEvent*) override;	// virtual protected
-//	void	resizeEvent		(QResizeEvent*) override;	// virtual protected
-	void	focusInEvent	(QFocusEvent*) override;		// virtual protected
-	void	focusOutEvent	(QFocusEvent*) override;		// virtual protected
-//	int		heightForWidth	(int w) const override;		// virtual
-	void	resizeEvent		(QResizeEvent*) override;	// virtual protected
+	void	showEvent		(QShowEvent *) override;
+	void	paintEvent		(QPaintEvent*) override;
+	void	focusInEvent	(QFocusEvent*) override;
+	void	focusOutEvent	(QFocusEvent*) override;
+	//int  	heightForWidth	(int w) const override;
+	void	resizeEvent		(QResizeEvent*) override;
 
 signals:
 	void	focusChanged	(bool);
 	void	resized			();
 
 public slots:
-//	void	update();
-
+	//void	update();
 };
+
+
+class Engine1
+{
+	// Drawing Engine:
+	// reads drawing commands from "video ram"
+	// can be used as a co-routine
+	// drawing commands may be implementable in real hardware:
+	//	 dx and dy contain absolute value plus direction bit
+	//	 decoded command to directly load X and Y into DAC registers
+	//	 and to disable beam for one command and to stop drawing and raise an interrupt
+
+public:
+	explicit Engine1 (VectorDisplay*, uint vram_size = 16 kB, uint8* ram = nullptr);
+	~Engine1()			{ if (vram_self_allocated) delete[] vram; }
+
+// display:
+	VectorDisplay*	display;
+
+// virtual time:
+	uint32	now;
+
+// emulated shared video ram:
+	uint	vram_mask;
+	uint8*	vram;
+	bool	vram_self_allocated;
+
+// emulated registers:
+	uint	A;			//	host-writable	address register (program counter)
+	qreal 	X, Y;		//					beam position (DAC input values)
+	bool	R;			//	reset:0			addressing mode (0=absolute / 1=relative)
+	bool	I;			//	reset:0			interrupt active
+	bool	C;			//	reset:0			cathode ray beam enable
+	bool	E;			//	reset:0			clock enable
+
+//	Control Codes in Drawing Commands:
+	static const uint8
+		CMD  = 0x80,	// dx = negative zero
+		NOP	 = 0x00,	// dy
+		Rrel = 8,
+		Rabs = 0,
+		Ion  = 4,		// raise Interrupt (if clock enable E is off)
+		Con  = 2,
+		Eon  = 1;
+
+	uint8*	videoRam () const noexcept { return vram; }
+	void	reset (uint32 cc=0);					// disable drawing until setAddress() is called
+	void	start (uint32 cc=0, uint address=0);	// set address register and start drawing (set register 'E' to 1)
+	bool	run (uint32 cc);						// run co-routine. return value of register 'E'
+	void	vsync (uint32 cc);
+};
+
+
+extern void runEngine1Demo (VectorDisplay*);
+
+extern void runClockDemo (VectorDisplay*);
+
+
+
+
+
+
 
 
 

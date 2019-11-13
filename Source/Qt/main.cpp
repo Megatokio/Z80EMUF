@@ -82,8 +82,25 @@ int main(int argc, char *argv[])
 		MainWindow w(nullptr, romfilepath);
 		w.show();
 
-		VectorDisplay d(nullptr);
-		d.show();
+		VectorDisplay d1(nullptr, QSize(1200,1000), VectorDisplay::BLUE);
+		d1.setWindowTitle("VectorDisplay - Engine1");
+		d1.show();
+		runEngine1Demo(&d1);
+
+		VectorDisplay d2(nullptr, QSize(500,500), VectorDisplay::WHITE);
+		d2.setWindowTitle("VectorDisplay - Clock");
+		d2.show();
+		runClockDemo(&d2);
+
+		VectorDisplay d3(nullptr, QSize(500,500), VectorDisplay::AMBER);
+		d3.setWindowTitle("VectorDisplay - Clock");
+		d3.show();
+		runClockDemo(&d3);
+
+		VectorDisplay d4(nullptr, QSize(500,500), VectorDisplay::PAPERWHITE);
+		d4.setWindowTitle("VectorDisplay - Clock");
+		d4.show();
+		runClockDemo(&d4);
 
 		return a.exec();
 	}

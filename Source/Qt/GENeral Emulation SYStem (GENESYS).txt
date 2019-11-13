@@ -1,0 +1,41 @@
+GENeral Emulation SYStem (GENESYS)
+
+Komponenti:
+- Display
+  + Character Terminal
+  - Raster Graphics Terminal
+  - Vector Graphics Terminal
+- Inputs
+  + Keyboard
+  - Mouse
+  - Joystick
+  - Virtual Buttons
+- Audio Output
+  - Multiple Channels
+  - Square|Ramp|Sine Wave
+  - Samples
+  - Direct Output
+- Other Peripherals
+  + Serial In|Out
+  - Hard Disk Device
+    - Generic
+    - Simulated Device
+  - Time Source
+    + XTAL
+    + Interrupts
+    - RTC
+- CPU
+  + Z80
+  - Virtual
+  - etc.
+  - Debugger
+- Memory
+  + ROM
+    - Flash
+  + RAM
+    + Linear
+    - Paged
+  - Memory Mapped I/O
+
+
+
