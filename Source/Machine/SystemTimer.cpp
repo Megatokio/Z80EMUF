@@ -21,42 +21,41 @@
 #include "Z80/Z80opcodes.h"
 
 
-/*	The system timer fires once per shift_cc()
-*/
+// System Timer
+// The system timer fires once per shift_cc()
+// it is raised at cc = 0
+// and cleared at cc = 256
 
 
-SystemTimer::SystemTimer(Item* m)
-:
-	Item(m,isa_SystemTimer)
+SystemTimer::SystemTimer (Item* machine) :
+	Item(machine,isa_SystemTimer)
 {
 	int_ack_byte = RST38;			// interrupt generating device: RST38 = 0xff = floating bus value
 }
 
-
 SystemTimer::~SystemTimer()
 {}
 
-
-void SystemTimer::init(/*cc=0*/)
+void SystemTimer::init (/*cc=0*/)
 {
-	irpt = on;						// assert interrupt
-	cc_next_update = 256;			// => irpt released in update()
+	irpt = on;						// raise interrupt
+	cc_next_update = 256;			// released in update()
 }
 
-
-/*	raise interrupt
-*/
-void SystemTimer::shift_cc(int32 /*cc*/, int32 /*dis*/)
+void SystemTimer::shift_cc (CpuCycle /*cc*/, int32 /*dis*/)
 {
-	irpt = on;						// assert interrupt
-	cc_next_update = 256;			// => irpt released in update()
+	// shift clock cycle time base:
+	// --> fire interrupt
+
+	irpt = on;						// raise interrupt
+	cc_next_update = 256;			// released in update()
 }
 
-
-/*	remove interrupt:
-*/
-void SystemTimer::update(int32 /*cc*/)
+void SystemTimer::update (CpuCycle /*cc*/)
 {
+	// callback:
+	// --> reset interrupt
+
 	irpt = off;
 	cc_next_update += NEVER;		// => irpt raised again in shift_cc()
 }

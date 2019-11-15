@@ -23,17 +23,16 @@
 class SystemTimer : public Item
 {
 public:
-	SystemTimer(Item*);
-	~SystemTimer();
-
+	explicit SystemTimer (Item* machine);
+	~SystemTimer() override;
 
 // Item interface:
-virtual void	init		(/*cc=0*/);
-//virtual void	reset		(int32 cc);
-//virtual bool	input		(int32 cc, uint addr, uint8& byte);
-//virtual bool	output		(int32 cc, uint addr, uint8  byte);
-virtual void	update		(int32 cc);
-virtual void	shift_cc	(int32 cc, int32 dis);
+virtual void init (/*cc=0*/) override;
+//virtual void reset (Cycle cc) override;
+//virtual bool input (Cycle cc, uint addr, uint8& byte) override;
+//virtual bool output (Cycle cc, uint addr, uint8  byte) override;
+virtual void update (CpuCycle cc) override;
+virtual void shift_cc (CpuCycle cc, int32 dis) override;
 };
 
 

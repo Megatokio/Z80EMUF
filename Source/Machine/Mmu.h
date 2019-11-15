@@ -22,21 +22,20 @@
 
 class Mmu : public Item
 {
-	uint8		current_state;
-	Z80*		cpu;
+	uint8 current_state;
+	Z80*  cpu;
 
 public:
-	Mmu(Item*);
-	~Mmu();
-
+	Mmu (Item*);
+	~Mmu() override;
 
 // Item interface:
-virtual void	init		(/*cc=0*/);
-virtual void	reset		(int32);
-//virtual bool	input		(int32, uint, uint8&);
-virtual bool	output		(int32, uint, uint8);
-//virtual void	update		(int32);
-//virtual void	shift_cc	(int32, int32);
+	virtual void init		(/*cc=0*/) override;
+	virtual void reset		(CpuCycle) override;
+	//virtual bool input	(CpuCycle, Address, Byte&) override;
+	virtual bool output		(CpuCycle, Address, Byte) override;
+	//virtual void update	(CpuCycle) override;
+	//virtual void shift_cc (CpuCycle, int32) override;
 };
 
 

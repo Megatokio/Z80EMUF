@@ -31,23 +31,20 @@ class MainWindow : public QMainWindow
 	class Machine* machine;
 
 protected:
-virtual void keyPressEvent(QKeyEvent*);
-virtual void keyReleaseEvent(QKeyEvent*);
-
-
+	virtual void keyPressEvent (QKeyEvent*) override;
+	virtual void keyReleaseEvent (QKeyEvent*) override;
 
 public:
-	MainWindow(QWidget* parent, cstr romfilepath);
-	~MainWindow();
-
+	MainWindow (QWidget* parent, cstr romfilepath);
+	~MainWindow() override;
 
 public slots:
-	void	update();
-	void	slotPowerOn();
-	void	slotReset();
-	void	slotNmi();
-	void	slotSpeed(QAction*);
-	void	slotQuitAppl();
+	void update();
+	void slotPowerOn();
+	void slotReset();
+	void slotNmi();
+	void slotSpeed(QAction*);
+	void slotQuitAppl();
 };
 
 

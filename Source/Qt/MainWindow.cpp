@@ -38,8 +38,7 @@ static int32 ccpf	= ccps/fps;						// cc per frame
 static int  speed[] = {1,2,4,8,12,16,24,40,80,120,160,200,240,300};
 
 
-MainWindow::MainWindow(QWidget* parent, cstr romfilepath)
-:
+MainWindow::MainWindow (QWidget* parent, cstr romfilepath) :
 	QMainWindow(parent),
 	timer(new QTimer(this)),
 	display(new Display404(this)),
@@ -55,7 +54,7 @@ MainWindow::MainWindow(QWidget* parent, cstr romfilepath)
 	QMenu* mSpeed = new QMenu("Speed",this);
 
 	QActionGroup* speedActionGroup = new QActionGroup(this);
-	for(uint i=0;i<NELEM(speed);i++)
+	for (uint i=0;i<NELEM(speed);i++)
 	{
 		QAction* a = new QAction(usingstr("%i MHz",speed[i]),mSpeed);
 		a->setCheckable(true);
@@ -86,55 +85,46 @@ MainWindow::~MainWindow()
 	delete machine;
 }
 
-
-/*	Timer interrupt:
-*/
 void MainWindow::update()
 {
+	// called by this->timer
+
 	Sio* sio = machine->sio_A;
 
-	if(sio->obu_avail())
+	if (sio->obu_avail())
 	{
-		do { display->print(sio->get_byte()); } while(sio->obu_avail());
+		do { display->print(sio->get_byte()); } while (sio->obu_avail());
 		display->update();
 	}
 }
 
-
-// virtual
-void MainWindow::keyPressEvent(QKeyEvent* e)
+void MainWindow::keyPressEvent (QKeyEvent* e)
 {
-	if(e->text().count()==0) return;
+	if (e->text().count()==0) return;
 	Sio* sio = machine->sio_A;
-	if(sio->ibu_free())
+	if (sio->ibu_free())
 		sio->store_byte(uchar(e->text().at(0).toLatin1()));
 	else
 		logline("sio A: input overflow");
 }
 
-// virtual
-void MainWindow::keyReleaseEvent(QKeyEvent*)
-{
-}
-
+void MainWindow::keyReleaseEvent (QKeyEvent*)
+{}
 
 void MainWindow::slotNmi()
 {
 	machine->nmi();
 }
 
-
 void MainWindow::slotReset()
 {
-	machine->reset();
+	machine->reset(0);
 }
-
 
 void MainWindow::slotPowerOn()
 {
-	machine->poweron();
+	machine->init();
 }
-
 
 void MainWindow::slotSpeed (QAction* a)
 {
@@ -142,11 +132,21 @@ void MainWindow::slotSpeed (QAction* a)
 	machine->setSpeed(speed*1000000);
 }
 
-
 void MainWindow::slotQuitAppl()
 {
 	QCoreApplication::quit();
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

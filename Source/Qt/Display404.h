@@ -26,34 +26,33 @@ class Display404 : public QWidget
 {
 	Q_OBJECT
 
-	QColor			clear_color;	// color used to clear background
-	QPainter*		painter;		// painter in use
-	QPixmap*		canvas;
+	QColor	 clear_color;	// color used to clear background
+	QPainter* painter;		// painter in use
+	QPixmap* canvas;
 
 	int x,y;
-	void	printAt(int x, int y, uint8 c);
-	void	scrollUp();
+	void printAt (int x, int y, uchar c);
+	void scrollUp();
 
 public:
 	explicit Display404(QWidget* parent);
-			~Display404();
+	~Display404() override;
 
-	void	print(cstr);
-	void	print(uchar);
+	void print (cstr);
+	void print (uchar);
 
 protected:
-	void	paintEvent		(QPaintEvent*);		// virtual protected
-//	void	resizeEvent		(QResizeEvent*);	// virtual protected
-	void	focusInEvent	(QFocusEvent*);		// virtual protected
-	void	focusOutEvent	(QFocusEvent*);		// virtual protected
+	void paintEvent		(QPaintEvent*) override;
+	//void resizeEvent 	(QResizeEvent*) override;
+	void focusInEvent	(QFocusEvent*) override;
+	void focusOutEvent	(QFocusEvent*) override;
 
 signals:
-	void	focusChanged	(bool);
-	void	resized			();
+	void focusChanged (bool);
+	void resized ();
 
 public slots:
-//	void	update();
-
+	//void update();
 };
 
 

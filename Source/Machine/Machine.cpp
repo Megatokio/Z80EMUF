@@ -25,24 +25,24 @@
 #include "Mmu.h"
 
 
-void* start_z80 (void* m)
+static void* start_z80 (void* machine)
 {
 	// run the Z80 on another thread:
 
-	static_cast<Machine*>(m)->run();
+	static_cast<Machine*>(machine)->run();
 	return nullptr;
 }
 
 void Machine::run()
 {
-	double time, delay;
+	double time = now();
 
-	for (time = now(); !terminate; time += 1.0/fps)
+	while (!terminate)
 	{
 		// run the machine for 1 frame:
 		lock();
 			cpu->run(ccpf);
-			int32 cc = cpu->cc;
+			CpuCycle cc = cpu->cc;
 			for (Item* item = this; item; item = item->next)
 			{
 				item->shift_cc(cc,ccpf);
@@ -50,21 +50,17 @@ void Machine::run()
 		unlock();
 
 		// wait for 1 frame to to pass by in realtime:
-		while ((delay = time-now()) > 0 && !terminate)
-		{
-			usleep(uint(delay*1000000));
-		}
+		waitUntil(time += 1.0/fps);
 	}
 }
 
-Machine::Machine (int32 ccps, int fps, cstr romfilepath)
-:
+Machine::Machine (int32 ccps, int fps, cstr romfilepath) :
 	Item(nullptr,isa_Machine),
 	cpu(new Z80(this,isa_Z80)),
 	mmu(new Mmu(cpu)),
 	system_timer(new SystemTimer(cpu)),
-	sio_A(new Sio(cpu,ccps/960,0x00ff,0x01ff,0x0200)),
-	sio_B(new Sio(cpu,ccps/960,0x01ff,0x01ff,0x0200)),
+	sio_A(new Sio(cpu,ccps/(SIO_A_BAUD/10), SIO_A, SIO_MASK, SIO_CTL)),
+	sio_B(new Sio(cpu,ccps/(SIO_B_BAUD/10), SIO_B, SIO_MASK, SIO_CTL)),
 	romfile(newcopy(romfilepath)),
 	ccps(ccps),
 	fps(fps),
@@ -76,30 +72,28 @@ Machine::Machine (int32 ccps, int fps, cstr romfilepath)
 
 	// start Z80 thread:
 	int e = pthread_create( &z80_thread, nullptr /*attr*/, start_z80, this );
-	if(e) abort("executeAt: %s", strerror(e));
+	if(e) abort("pthread_create: %s", strerror(e));
 }
-
 
 Machine::~Machine()
 {
 	terminate = true;
 	pthread_join(z80_thread,nullptr);
 
-	while (next) delete next;
+	while (next) delete next;	// delete items
 	delete[] romfile;
 }
-
 
 void Machine::init()
 {
 	// Item interface:
 	// initialize the machine
-	// kind of power-on reset
+	// power-on reset
 
 	// reload rom:
 	// normally this is done only once in Machine c'tor,
 	// but reloading also the rom here may speed up edit-compile-run cycles
-	uint8 bu[pagesize];
+	Byte bu[pagesize];
 	FD fd(romfile);
 	uint32 readsize = min(pagesize,uint(fd.file_size()));		// number of bytes to read
 	fd.read_bytes(bu,readsize);									// read into buffer
@@ -109,25 +103,29 @@ void Machine::init()
 		// clear flag bytes in the upper half of the CoreBytes (though not used in this example system)
 		// clear ram filling in some noise
 		uint32 i=0;
-		for(;i<readsize;i++) memory[i] = bu[i];					// copy uint8 buffer to uint16 memory
-		for(;i<pagesize;i++) memory[i] = 0x00FF;				// clear rest of rom (if any)
-		for(;i<pagesize*numpages; i++) memory[i] = i&0x00FF;	// clear ram filling in some noise
+		for (;i<readsize;i++) memory[i] = bu[i];				// copy uint8 buffer to uint16 memory
+		for (;i<pagesize;i++) memory[i] = 0x00FF;				// clear rest of rom (if any)
+		for (;i<pagesize*numpages; i++) memory[i] = i&0x00FF;	// clear ram filling in some noise
 
 		// init all attached items:
 		// the Mmu will map the memory into the Z80 address space.
-		for(Item* item=next; item; item=item->next)
+		for (Item* item=next; item; item=item->next)
 		{
 			item->init();
 		}
 	unlock();
 }
 
-void Machine::reset()
+void Machine::reset (CpuCycle cc)
 {
+	// Item interface:
+	// push reset
+
 	lock();
-		for(Item* item=next; item; item=item->next)
+		cc = max(cc,cpu->cc);
+		for (Item* item=next; item; item=item->next)
 		{
-			item->reset(cpu->cc);
+			item->reset(cc);
 		}
 	unlock();
 }
@@ -140,13 +138,13 @@ void Machine::nmi()
 	unlock();
 }
 
-void Machine::setSpeed (int32 new_ccps)
+void Machine::setSpeed (CpuCycle new_ccps)
 {
 	lock();
 		ccps = new_ccps;
 		ccpf = (ccps+fps/2)/fps;
-		sio_A->ccpb = ccps/960;
-		sio_B->ccpb = ccps/960;
+		sio_A->set_ccpb(ccps/(SIO_A_BAUD/10));
+		sio_B->set_ccpb(ccps/(SIO_B_BAUD/10));
 	unlock();
 }
 

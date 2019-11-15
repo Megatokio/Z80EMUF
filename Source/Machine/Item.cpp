@@ -23,41 +23,33 @@
 #include "Z80/Z80.h"
 
 
-
-void Item::unlink()
+void Item::unlink() noexcept
 {
-	if(prev) prev->next=next;
-	if(next) next->prev=prev;
-	prev=next=0;
+	if (prev) prev->next=next;
+	if (next) next->prev=prev;
+	prev = next = nullptr;
 }
 
-
-void Item::linkBehind( Item* p )
+void Item::linkBehind (Item* p) noexcept
 {
 	prev = p;
-	next = p ? p->next : NULL;
-	if(prev) prev->next = this;
-	if(next) next->prev = this;
+	next = p ? p->next : nullptr;
+	if (prev) prev->next = this;
+	if (next) next->prev = this;
 }
 
-
-Item::Item(Item *behind, isa_id id, uint o_addr, uint o_mask, uint i_addr , uint i_mask)
-:
+Item::Item (Item *behind, IsaID id, Address o_addr, Address o_mask, Address i_addr , Address i_mask) :
 	IsaObject(id),
-	machine(behind?behind->machine:id==isa_Machine?(Machine*)this:NULL),
-	in_mask(i_mask),		// dflt: no i/o
+	machine(behind?behind->machine:id==isa_Machine?(Machine*)this:nullptr),
+	in_mask(i_mask),
 	in_bits(i_addr),
 	out_mask(o_mask),
-	out_bits(o_addr),
-	int_ack_byte(0),		// 0 => no interrupts
-	cc_next_update(NEVER),	// never
-	irpt(off)				// no irpt asserted
+	out_bits(o_addr)
 {
 	linkBehind(behind);
 }
 
-
-Item::~Item ( )
+Item::~Item ()
 {
 	unlink();
 }

@@ -27,7 +27,7 @@ class Item;
 class Z80;
 class Sio;
 
-enum isa_id
+enum IsaID
 {
 	isa_none=0,
 	isa_unknown,
@@ -47,18 +47,17 @@ enum isa_id
 
 class IsaObject
 {
+protected:
+	IsaID id;
+
+	IsaObject (IsaID id) : id(id) {}
+	IsaObject (const IsaObject& q) : id(q.id) {}
+	IsaObject& operator= (const IsaObject& q) { id = q.id; return *this; }
+	virtual ~IsaObject () { id = isa_none; }
+
 public:
-
-	isa_id		id;
-
-				IsaObject   (isa_id id)					:id(id){}
-				IsaObject   (const IsaObject& q)		:id(q.id){}
-
-	IsaObject&  operator=   (const IsaObject& q)		{id = q.id; return *this;}
-	virtual     ~IsaObject  ()							{id = isa_none;}
-
-	bool		isA			(isa_id i) volatile const	{return id==i;}
-	isa_id		isaId       () volatile const			{return id;}
+	bool isA (IsaID i) volatile const	{ return id==i; }
+	IsaID isaId () volatile const { return id; }
 };
 
 

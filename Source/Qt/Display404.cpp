@@ -28,29 +28,27 @@
 //#include "Sio.h"
 
 
+static const int zoom = 3;		// 2
+static const int hpadding = 6;
+static const int hspacing = 1;
+static const int width = (40*5 + 39*hspacing + 2*hpadding) * zoom;
+static const int vpadding = 6;
+static const int vspacing = 3;
+static const int height = (4*8 + 3*vspacing + 2*vpadding ) * zoom;
 
-const int zoom = 3;		// 2
-const int hpadding = 6;
-const int hspacing = 1;
-const int width = (40*5 + 39*hspacing + 2*hpadding) * zoom;
-const int vpadding = 6;
-const int vspacing = 3;
-const int height = (4*8 + 3*vspacing + 2*vpadding ) * zoom;
-
-const QColor bgcolor(0x66,0x88,0x00,0xff);	// rgba
-const QColor fgcolor(0x11,0x33,0x00,0xff);	// rgba
-
+static const QColor bgcolor(0x66,0x88,0x00,0xff);	// rgba
+static const QColor fgcolor(0x11,0x33,0x00,0xff);	// rgba
 
 
-Display404::Display404(QWidget* parent)
-:	QWidget(parent)
+Display404::Display404 (QWidget* parent) :
+	QWidget(parent)
 {
 	setFixedWidth(::width);
 	setFixedHeight(::height);
 
 	//QWidget::setEnabled(true);                // enable mouse & kbd events (true=default)
 	setFocusPolicy(Qt::StrongFocus);            // sonst kriegt das Toolwindow manchmal keine KeyEvents
-//	setAttribute(Qt::WA_OpaquePaintEvent,on);   // wir malen alle Pixel. Qt muss nicht vorher löschen.
+	//setAttribute(Qt::WA_OpaquePaintEvent,on);	// wir malen alle Pixel. Qt muss nicht vorher löschen.
 
 	x=y=0;
 
@@ -61,23 +59,19 @@ Display404::Display404(QWidget* parent)
 	painter->setPen(Qt::NoPen);
 	painter->setBrush(fgcolor);
 
-	QTransform trans;
-	trans.scale(zoom,zoom);
-	painter->setWorldTransform(trans);
+	painter->setWorldTransform(QTransform::fromScale(zoom,zoom));
 
 	painter->eraseRect(canvas->rect());
 	print("1234567890123456789012345678901234567890");
 	print("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn");
-//	print("This is the 404 Display!\n\r");
+	//print("This is the 404 Display!\n\r");
 }
-
 
 Display404::~Display404()
 {
 	delete painter;
 	delete canvas;
 }
-
 
 void Display404::scrollUp()
 {
@@ -98,8 +92,7 @@ void Display404::scrollUp()
 	painter->setWorldTransform(trans);
 }
 
-
-void Display404::printAt (int x, int y, uint8 c)
+void Display404::printAt (int x, int y, uchar c)
 {
 	int x0 = hpadding + x * (5+hspacing);
 	int y0 = vpadding + y * (8+vspacing);
@@ -120,7 +113,6 @@ void Display404::printAt (int x, int y, uint8 c)
 	}
 	update(x, y, 5*zoom, 8*zoom);
 }
-
 
 void Display404::print (uchar c)
 {
@@ -146,38 +138,39 @@ void Display404::print (cstr s)
 	while(*s) print(uchar(*s++));
 }
 
-
-// virtual protected
-void Display404::paintEvent(QPaintEvent*)
+void Display404::paintEvent (QPaintEvent*)
 {
 	QPainter painter(this);
 	painter.drawPixmap(0,0,*canvas);
 
 	if(hasFocus())
 	{
-		QPen pen(QColor(0x88,0xff,0x00,0x88));
-		pen.setWidth(6);
-		painter.setPen(pen);
-//		painter.setCompositionMode(QPainter::CompositionMode_Darken);
+		painter.setPen(QPen(QColor(0x88,0xff,0x00,0x88),6));
+		//painter.setCompositionMode(QPainter::CompositionMode_Darken);
 		painter.drawRect(rect());
 	}
 }
 
-// virtual protected
-void Display404::focusInEvent(QFocusEvent* e)
+void Display404::focusInEvent (QFocusEvent* e)
 {
 	update(rect());
 	QWidget::focusInEvent(e);
 	emit focusChanged(1);
 }
 
-// virtual protected
-void Display404::focusOutEvent(QFocusEvent* e)
+void Display404::focusOutEvent (QFocusEvent* e)
 {
 	update(rect());
 	QWidget::focusOutEvent(e);
 	emit focusChanged(0);
 }
+
+
+
+
+
+
+
 
 
 

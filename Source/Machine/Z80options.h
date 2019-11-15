@@ -48,9 +48,9 @@ typedef uint16 CoreByte;
 
 // these are the default definitions as defined in Z80macros.h
 // and could be left out here:
-#define	OUTPUT(A,B)		{ INCR_CC(4); this->handle_output(cc-2,A,B); }
-#define	INPUT(A,B)		{ INCR_CC(4); B = this->handle_input(cc-2,A); }
-#define UPDATE()		{ cc_next_update = this->handle_update(cc, cc_exit); }
+#define	OUTPUT(A,B)		do{ INCR_CC(4); this->handle_output(cc-2,A,B); }while(0)
+#define	INPUT(A,B)		do{ INCR_CC(4); B = this->handle_input(cc-2,A); }while(0)
+#define UPDATE()		do{ cc_next_update = this->handle_update(cc, cc_exit); }while(0)
 
 
 

@@ -31,19 +31,19 @@
 
 class Machine : public Item
 {
-	PLock	_lock;
+	PLock _lock;
 
 public:
-	class Z80*			cpu;		// first item
-	class Mmu*			mmu;
+	class Z80*	cpu;	// first item
+	class Mmu*	mmu;
 	class SystemTimer*	system_timer;
-	class Sio*			sio_A;
-	class Sio*			sio_B;
+	class Sio*	sio_A;
+	class Sio*	sio_B;
 
-	cstr	romfile;
-	int32	ccps;			// cpu cycles per second
-	int32	fps;			// frames per second (system timer frequency)
-	int32	ccpf;			// cpu cycles per frame
+	cstr  romfile;
+	CpuCycle ccps;			// cpu cycles per second
+	int	  fps;			// frames per second (system timer frequency)
+	CpuCycle ccpf;			// cpu cycles per frame
 
 	CoreByte memory[numpages*pagesize];
 
@@ -52,26 +52,23 @@ public:
 
 
 	Machine (int32 ccps, int fps, cstr romfilepath);
-	~Machine();
+	~Machine() override;
 
 	void run();
 	void nmi();
-	void setSpeed (int32 ccps);
-	void reset();
-	void poweron()		{ init(); }
+	void setSpeed (CpuCycle ccps);
 
 	void lock()			{ _lock.lock(); }
 	void unlock()		{ _lock.unlock(); }
-	bool is_locked()	{ return _lock.trylock()==0; }		// only for error checking
+	bool is_locked()	{ return _lock.trylock()==0; }	// only for error checking
 
 // Item interface:
-protected:
-virtual void	init		(/*cc=0*/);
-//virtual void	reset		(int32);
-//virtual bool	input		(int32, uint, uint8&)		{return no;}
-//virtual bool	output		(int32, uint, uint8)		{return no;}
-//virtual void	update		(int32);
-//virtual void	shift_cc	(int32, int32);
+	virtual void init (/*cc=0*/) override;
+	virtual void reset (CpuCycle) override;
+	//virtual bool	input  (CpuCycle, Address, Byte&) {return no;}
+	//virtual bool	output (CpuCycle, Address, Byte)  {return no;}
+	//virtual void	update (CpuCycle);
+	//virtual void	shift_cc (CpuCycle, int32);
 };
 
 

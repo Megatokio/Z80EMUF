@@ -20,8 +20,7 @@
 #include "Z80/Z80opcodes.h"
 
 
-Sio::Sio(Item* m, int32 cc_per_byte, uint addr, uint mask, uint creg_mask)
-:
+Sio::Sio (Item* m, CpuCycle cc_per_byte, Address addr, Address mask, Address creg_mask) :
 	Item(m, isa_Sio, addr,mask, addr,mask),
 	ccpb(cc_per_byte),
 	c_mask(creg_mask)
@@ -32,8 +31,7 @@ Sio::Sio(Item* m, int32 cc_per_byte, uint addr, uint mask, uint creg_mask)
 Sio::~Sio()
 {}
 
-
-void Sio::_reset(int32 cc)
+void Sio::do_reset (CpuCycle cc)
 {
 	cc_next_update = NEVER;
 
@@ -49,21 +47,19 @@ void Sio::_reset(int32 cc)
 	cc_ibu_next = cc;
 }
 
-void Sio::init(/*cc=0*/)
+void Sio::init (/*cc=0*/)
 {
 	Item::init();
-	_reset(0);
+	do_reset(0);
 }
 
-
-void Sio::reset(int32 cc)
+void Sio::reset (CpuCycle cc)
 {
 	Item::reset(cc);
-	_reset(cc);
+	do_reset(cc);
 }
 
-
-void Sio::update_interrupt(int32 cc)
+void Sio::update_interrupt (CpuCycle cc)
 {
 	// avoid race condition => read ibu_avail() and obu_free() only once:
 	bool i_avail = ibu_avail();
@@ -82,8 +78,7 @@ void Sio::update_interrupt(int32 cc)
 					 o ? cc_obu_next : NEVER;
 }
 
-
-void Sio::shift_cc(int32 cc, int32 dis)
+void Sio::shift_cc (CpuCycle cc, int32 dis)
 {
 	assert(cc>=dis);
 
@@ -94,18 +89,18 @@ void Sio::shift_cc(int32 cc, int32 dis)
 	cc_next_update -= dis;
 }
 
-void Sio::update(int32 cc)
+void Sio::update (CpuCycle cc)
 {
 	assert(cc>=cc_next_update);
 
 	update_interrupt(cc);
 }
 
-bool Sio::output(int32 cc, uint addr, uint8 byte)
+bool Sio::output (CpuCycle cc, Address addr, Byte byte)
 {
 	assert(matches_out(addr));
 
-	if(addr&c_mask)	// control
+	if (addr&c_mask)	// control
 	{
 		obu_interrupt_enabled = byte & 1;
 		ibu_interrupt_enabled = byte & 2;
@@ -115,7 +110,7 @@ bool Sio::output(int32 cc, uint addr, uint8 byte)
 	}
 	else			// data
 	{
-		if(obu_interrupt(cc))
+		if (obu_interrupt(cc))
 		{
 			obu[obuwp++ & bu_mask] = byte;
 			cc_obu_next = max(cc_obu_next+ccpb, cc);
@@ -126,19 +121,19 @@ bool Sio::output(int32 cc, uint addr, uint8 byte)
 	return no;
 }
 
-bool Sio::input(int32 cc, uint addr, uint8& byte)
+bool Sio::input (CpuCycle cc, Address addr, Byte& byte)
 {
 	assert(matches_in(addr));
 
-	if(addr&c_mask)	// status
+	if (addr&c_mask)	// status
 	{
-		if(!ibu_interrupt(cc)) byte &= ~2;		// input idle
-		if(!obu_interrupt(cc)) byte &= ~1;		// output busy
+		if (!ibu_interrupt(cc)) byte &= ~2;		// input idle
+		if (!obu_interrupt(cc)) byte &= ~1;		// output busy
 		return no;
 	}
 	else			// data
 	{
-		if(ibu_interrupt(cc))
+		if (ibu_interrupt(cc))
 		{
 			byte &= ibu[iburp++ & bu_mask];
 			cc_ibu_next = max(cc_ibu_next+ccpb, cc);
@@ -146,9 +141,16 @@ bool Sio::input(int32 cc, uint addr, uint8& byte)
 			return yes;
 		}
 	}
+
 	byte &= oburp;	// random
 	return no;
 }
+
+
+
+
+
+
 
 
 

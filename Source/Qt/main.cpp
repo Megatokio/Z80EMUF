@@ -37,31 +37,30 @@ static QApplication* appl;
 static QSettings settings;
 
 
-static __attribute((noreturn)) void usage(cstr msg)
+static __attribute((noreturn)) void usage (cstr msg = nullptr)
 {
-	logline("%s", msg);
-	logline("Z80EMUF: sample Z80 project");
-	logline("usage: emuf [-v|--verbose] <epromfile>");
-	logline("https://k1.spdns.de/Develop/Projects/Z80EMUF");
+	if (msg) fprintf(stderr,"%s\n", msg);
+	fprintf(stderr,"Z80EMUF: sample Z80 project\n");
+	fprintf(stderr,"usage: Z80EMUF [-v|--verbose] <epromfile>\n");
+	fprintf(stderr,"https://k1.spdns.de/Develop/Projects/Z80EMUF\n");
 	abort();
 }
 
-
-int main(int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	try
 	{
 		QByteArray ba = settings.value("romfile").toString().toUtf8();
 		cstr romfilepath = ba.data();
 
-		for(int i=1;i<argc;i++)
+		for (int i=1;i<argc;i++)
 		{
 			cstr arg = argv[i];
-			if(arg[0]=='-')
+			if (arg[0]=='-')
 			{
-				if(eq(arg,"-h") || eq(arg,"--help"))		 usage("");
-				else if(eq(arg,"-v") || eq(arg,"--verbose")) verbose++;
-				else usage(catstr("unknown option ",arg));
+				if (eq(arg,"-h") || eq(arg,"--help")) usage();
+				else if (eq(arg,"-v") || eq(arg,"--verbose")) verbose++;
+				else usage(catstr("unknown option: ",arg));
 			}
 			else
 			{
@@ -69,10 +68,10 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if(eq(romfilepath,"")) usage("rom file missing");
+		if (eq(romfilepath,"")) usage("rom file missing");
 		romfilepath = fullpath(romfilepath);
-		if(errno) abort("%s: %s", errorstr(errno), romfilepath);
-		if(!is_file(romfilepath)) abort("not a regular file: %s", romfilepath);
+		if (errno) abort("%s: %s", errorstr(errno), romfilepath);
+		if (!is_file(romfilepath)) abort("not a regular file: %s", romfilepath);
 
 	// =========================================================
 	//	Initialize & run:
