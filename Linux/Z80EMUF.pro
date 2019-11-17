@@ -19,7 +19,7 @@ SOURCES +=					\
 	Libraries/kio/kio.cpp			\
 	Libraries/kio/exceptions.cpp	\
 	Libraries/cstrings/cstrings.cpp	\
-	Libraries/unix/tempmem.cpp		\
+	Libraries/cstrings/tempmem.cpp	\
 	Libraries/unix/os_utilities.cpp	\
 	Libraries/unix/FD.cpp			\
 	Libraries/unix/files.cpp		\
@@ -44,7 +44,7 @@ HEADERS  +=					\
 	Libraries/kio/peekpoke.h		\
 	Libraries/cstrings/cstrings.h	\
 	Libraries/unix/log.h			\
-	Libraries/unix/tempmem.h		\
+	Libraries/cstrings/tempmem.h	\
 	Libraries/unix/os_utilities.h	\
 	Libraries/unix/FD.h				\
 	Libraries/unix/files.h			\
