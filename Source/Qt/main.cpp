@@ -103,7 +103,7 @@ int main (int argc, char *argv[])
 
 		return a.exec();
 	}
-	catch(any_error& e)
+	catch(AnyError& e)
 	{
 		abort("%s", e.what());
 	}
